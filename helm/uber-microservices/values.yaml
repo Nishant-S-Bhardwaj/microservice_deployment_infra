@@ -1,0 +1,23 @@
+image:
+  repository: nishantbhardwaj/microservices-deployment
+  pullPolicy: IfNotPresent
+
+services:
+  - name: iam
+    tag: iam
+    nodePort: 30001
+  - name: user
+    tag: user
+    nodePort: 30002
+  - name: route
+    tag: route
+    nodePort: 30003
+  - name: rider
+    tag: rider
+    nodePort: 30004
+  - name: payment
+    tag: payment
+    nodePort: 30005
+
+containerPort: 3000
+replicaCount: 1
