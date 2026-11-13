@@ -19,6 +19,8 @@ spec:
     spec:
       nodeSelector:
         workload: app
+      imagePullSecrets:
+        {{- toYaml $.Values.image.pullSecrets | nindent 8 }}
       containers:
         - name: {{ .name }}
           image: "{{ $.Values.image.repository }}:{{ .tag }}"
@@ -27,5 +29,48 @@ spec:
             - name: http
               containerPort: {{ $.Values.containerPort }}
               protocol: TCP
+          env:
+            - name: POSTGRES_DB
+              value: {{ $.Values.database.name | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.database.authSecret }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.database.authSecret }}
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ $.Values.database.host }}:{{ $.Values.database.port }}/{{ $.Values.database.name }}"
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.rabbitmq.authSecret }}
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.rabbitmq.authSecret }}
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: AMQP_URL
+              value: "amqp://$(RABBITMQ_DEFAULT_USER):$(RABBITMQ_DEFAULT_PASS)@{{ $.Values.rabbitmq.host }}:{{ $.Values.rabbitmq.port }}"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.jwtSecret }}
+                  key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
 ---
 {{ end }}

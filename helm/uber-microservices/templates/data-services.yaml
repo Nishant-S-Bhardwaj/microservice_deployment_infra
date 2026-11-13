@@ -7,7 +7,6 @@ metadata:
     app.kubernetes.io/part-of: uber
 spec:
   type: ClusterIP
-  clusterIP: None
   selector:
     app.kubernetes.io/name: postgres
   ports:
@@ -25,7 +24,6 @@ metadata:
     app.kubernetes.io/part-of: uber
 spec:
   type: ClusterIP
-  clusterIP: None
   selector:
     app.kubernetes.io/name: rabbitmq
   ports:

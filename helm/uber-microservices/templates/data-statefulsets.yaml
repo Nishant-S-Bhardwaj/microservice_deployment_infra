@@ -19,9 +19,15 @@ spec:
     spec:
       nodeSelector:
         workload: infra
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
       containers:
         - name: postgres
           image: nishantbhardwaj/microservices-deployment:postgres
+          args:
+            - -c
+            - listen_addresses=*
+          imagePullPolicy: IfNotPresent
           ports:
             - name: postgres
               containerPort: 5432
@@ -75,9 +81,12 @@ spec:
     spec:
       nodeSelector:
         workload: infra
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
       containers:
         - name: rabbitmq
           image: nishantbhardwaj/microservices-deployment:rabbitmq
+          imagePullPolicy: IfNotPresent
           ports:
             - name: amqp
               containerPort: 5672
