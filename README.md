@@ -13,7 +13,7 @@ kind create cluster --config kind-config.yaml
 kubectl get nodes --show-labels
 ```
 
-Kind maps ports 80/443 to the ingress worker and localhost ports 3001-3005 to the API NodePorts. These mappings are fixed at cluster creation; recreate the cluster if they change.
+Kind maps ports 80/443 to the ingress worker. Application services use ClusterIP and are reached through ingress, not exposed as NodePorts.
 
 ## Install ingress-nginx
 
@@ -61,18 +61,18 @@ Then from this **deployment repository root**:
 helm lint helm/uber-microservices
 helm upgrade --install uber helm/uber-microservices --namespace uber
 kubectl apply -f kubernetes/ingress.yaml
-kubectl delete ingress uber-api uber-user -n uber --ignore-not-found
+kubectl delete ingress uber-rider uber-user -n uber --ignore-not-found
 kubectl get pods,services,ingress -n uber -o wide
 ```
 
 The chart configures the APIs with in-cluster PostgreSQL and RabbitMQ URLs, credentials, and a shared `JWT_SECRET` (required at startup). For this local demo only, it sets `DEMO_AUTH_DISABLED=true` on User and Rider: the services assign fixed demo passenger/rider identities, and the UI has no login. **This bypass is unsafe on public or untrusted networks.** The app source defaults to JWT authentication unless that variable is explicitly set. The chart deploys image tags `user`, `route`, `rider`, `payment`, `ui`, `postgres`, and `rabbitmq` from `nishantbhardwaj/microservices-deployment`; ensure these images have been pushed and are publicly pullable. For a private Docker Hub repository, create a registry Secret in namespace `uber` and add it under `image.pullSecrets` in `helm/uber-microservices/values.yaml`.
 
-## Access the APIs
+## Use the browser app
 
-Ingress is host-independent: `/` serves the UI, while `/user/*`, `/rider/*`, `/route/*`, and `/payment/*` route to their respective APIs with the prefix stripped. The UI provides passenger ride booking and ride status, rider availability and offer actions, and health indicators for all deployed services. Route matching and fare calculation remain event-driven; route distance/ETA and final fare appear on the ride status view.
+Ingress is host-independent: `/` serves the passenger dashboard and `/rider` serves the rider dashboard. Browser API calls use `/api/user/*` and `/api/rider/*`; Route and Payment are internal-only services and have no public ingress routes. Route matching and fare calculation remain event-driven; distance, ETA, and final fare appear in ride status/history.
 
-Open `http://<machine-ip>/` in a browser to use the UI. Health checks are available at `http://<machine-ip>/user/health`, `/rider/health`, `/route/health`, and `/payment/health`. The APIs can also be accessed directly on localhost ports 3002-3005 through the mapped NodePorts.
+Open `http://<machine-ip>/` for passenger booking or `http://<machine-ip>/rider` for the rider dashboard. User and Rider health checks are available at `/api/user/health` and `/api/rider/health`; Route and Payment are not browser-accessible.
 
-For an end-to-end demo, open the UI in two tabs: choose **Rider** in one tab and go online, then choose **Passenger** in the other and request a ride. The rider tab polls for offers and opens a popup; accept, start, and complete the trip there. The passenger ride list updates with matching status, distance/ETA, and fare.
+For an end-to-end demo, open both URLs in separate tabs: go online on the Rider page, then request a ride on the passenger page. The rider tab polls for offers and opens a popup; accept, start, and complete the trip there. The passenger ride list updates with matching status, distance/ETA, and fare.
 
 PostgreSQL and RabbitMQ are single-replica StatefulSets with 1Gi persistent volumes. The volumes are for local practice, not backups or high availability.

@@ -8,6 +8,13 @@ spec:
   rules:
     - http:
         paths:
+          - path: /rider
+            pathType: Prefix
+            backend:
+              service:
+                name: ui
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:
@@ -19,7 +26,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: uber-rider
+  name: uber-api
   namespace: uber
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
@@ -29,31 +36,17 @@ spec:
   rules:
     - http:
         paths:
-          - path: /user(/|$)(.*)
+          - path: /api/user(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
                 name: user
                 port:
                   number: 3000
-          - path: /rider(/|$)(.*)
+          - path: /api/rider(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
                 name: rider
-                port:
-                  number: 3000
-          - path: /route(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: route
-                port:
-                  number: 3000
-          - path: /payment(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: payment
                 port:
                   number: 3000

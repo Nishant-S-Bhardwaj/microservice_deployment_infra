@@ -23,23 +23,3 @@ nodes:
       - containerPort: 443
         hostPort: 443
         protocol: TCP
-      - containerPort: 30001
-        hostPort: 3001
-        listenAddress: "127.0.0.1"
-        protocol: TCP
-      - containerPort: 30002
-        hostPort: 3002
-        listenAddress: "127.0.0.1"
-        protocol: TCP
-      - containerPort: 30003
-        hostPort: 3003
-        listenAddress: "127.0.0.1"
-        protocol: TCP
-      - containerPort: 30004
-        hostPort: 3004
-        listenAddress: "127.0.0.1"
-        protocol: TCP
-      - containerPort: 30005
-        hostPort: 3005
-        listenAddress: "127.0.0.1"
-        protocol: TCP
