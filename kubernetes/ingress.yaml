@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: uber-user
+  name: uber-ui
   namespace: uber
 spec:
   ingressClassName: nginx
@@ -12,9 +12,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: user
+                name: ui
                 port:
-                  number: 3000
+                  number: 80
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

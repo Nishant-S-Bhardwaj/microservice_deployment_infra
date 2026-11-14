@@ -23,11 +23,11 @@ spec:
         {{- toYaml .Values.image.pullSecrets | nindent 8 }}
       containers:
         - name: postgres
-          image: nishantbhardwaj/microservices-deployment:postgres
+          image: "{{ .Values.image.repository }}:postgres"
           args:
             - -c
             - listen_addresses=*
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: postgres
               containerPort: 5432
@@ -85,8 +85,8 @@ spec:
         {{- toYaml .Values.image.pullSecrets | nindent 8 }}
       containers:
         - name: rabbitmq
-          image: nishantbhardwaj/microservices-deployment:rabbitmq
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:rabbitmq"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: amqp
               containerPort: 5672

@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: uber-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Nishant-S-Bhardwaj/microservice_deployment_infra
+    targetRevision: main
+    path: helm/uber-microservices
+    helm:
+      releaseName: uber
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: uber
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

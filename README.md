@@ -1,8 +1,8 @@
 # Uber deployment
 
-This repository contains the kind cluster and Kubernetes deployment configuration for the User, Route, Rider, and Payment backend services. It does not deploy IAM or a UI. The application images still require a shared `JWT_SECRET` to start.
+This repository contains the kind cluster and Kubernetes deployment configuration for the User, Route, Rider, and Payment backend services, plus the static browser UI. IAM is intentionally not deployed.
 
-The local kind cluster has one control-plane node and four workers: three labeled `workload=app` and one labeled `workload=infra`. The four APIs schedule on app workers. PostgreSQL, RabbitMQ, and ingress-nginx schedule on the infra worker.
+The local kind cluster has one control-plane node and four workers: three labeled `workload=app` and one labeled `workload=infra`. The four APIs and UI schedule on app workers. PostgreSQL, RabbitMQ, and ingress-nginx schedule on the infra worker.
 
 ## Create the cluster
 
@@ -13,7 +13,7 @@ kind create cluster --config kind-config.yaml
 kubectl get nodes --show-labels
 ```
 
-Kind maps ports 80/443 to the ingress worker and localhost ports 3002-3005 to the API NodePorts; port 3001 is unused after removing IAM. These mappings are fixed at cluster creation; recreate the cluster if they change.
+Kind maps ports 80/443 to the ingress worker and localhost ports 3001-3005 to the API NodePorts. These mappings are fixed at cluster creation; recreate the cluster if they change.
 
 ## Install ingress-nginx
 
@@ -42,20 +42,37 @@ kubectl create secret generic uber-rabbitmq-auth --namespace uber \
 kubectl create secret generic uber-app-auth --namespace uber \
   --from-literal=JWT_SECRET='REPLACE_WITH_A_RANDOM_SECRET' \
   --dry-run=client -o yaml | kubectl apply -f -
+```
 
+From the **application repository root**, rebuild and push the changed images:
+
+```sh
+docker build -t nishantbhardwaj/microservices-deployment:user services/user
+docker build -t nishantbhardwaj/microservices-deployment:rider services/rider
+docker build -t nishantbhardwaj/microservices-deployment:ui ui
+docker push nishantbhardwaj/microservices-deployment:user
+docker push nishantbhardwaj/microservices-deployment:rider
+docker push nishantbhardwaj/microservices-deployment:ui
+```
+
+Then from this **deployment repository root**:
+
+```sh
 helm lint helm/uber-microservices
 helm upgrade --install uber helm/uber-microservices --namespace uber
 kubectl apply -f kubernetes/ingress.yaml
-kubectl delete ingress uber-api -n uber --ignore-not-found
+kubectl delete ingress uber-api uber-user -n uber --ignore-not-found
 kubectl get pods,services,ingress -n uber -o wide
 ```
 
-The chart configures the APIs with in-cluster PostgreSQL and RabbitMQ URLs and credentials. It deploys the image tags `user`, `route`, `rider`, `payment`, `postgres`, and `rabbitmq` from `nishantbhardwaj/microservices-deployment`; ensure these images have been pushed and are publicly pullable. For a private Docker Hub repository, create a registry Secret in namespace `uber` and add it under `image.pullSecrets` in `helm/uber-microservices/values.yaml`.
+The chart configures the APIs with in-cluster PostgreSQL and RabbitMQ URLs, credentials, and a shared `JWT_SECRET` (required at startup). For this local demo only, it sets `DEMO_AUTH_DISABLED=true` on User and Rider: the services assign fixed demo passenger/rider identities, and the UI has no login. **This bypass is unsafe on public or untrusted networks.** The app source defaults to JWT authentication unless that variable is explicitly set. The chart deploys image tags `user`, `route`, `rider`, `payment`, `ui`, `postgres`, and `rabbitmq` from `nishantbhardwaj/microservices-deployment`; ensure these images have been pushed and are publicly pullable. For a private Docker Hub repository, create a registry Secret in namespace `uber` and add it under `image.pullSecrets` in `helm/uber-microservices/values.yaml`.
 
 ## Access the APIs
 
-Ingress is host-independent: `/` routes to the User API; `/user/*`, `/rider/*`, `/route/*`, and `/payment/*` route to their respective APIs with the prefix stripped. For example, `/user/health` reaches User's `/health`, and `/rider/health` reaches Rider's `/health`. These are API routes, not browser pages; the images do not contain a frontend UI.
+Ingress is host-independent: `/` serves the UI, while `/user/*`, `/rider/*`, `/route/*`, and `/payment/*` route to their respective APIs with the prefix stripped. The UI provides passenger ride booking and ride status, rider availability and offer actions, and health indicators for all deployed services. Route matching and fare calculation remain event-driven; route distance/ETA and final fare appear on the ride status view.
 
-Use `http://<machine-ip>/user/health`, `/rider/health`, `/route/health`, or `/payment/health` through ingress-nginx to check each API. User, Route, Rider, and Payment can also be accessed directly on localhost ports 3002-3005 through the mapped NodePorts.
+Open `http://<machine-ip>/` in a browser to use the UI. Health checks are available at `http://<machine-ip>/user/health`, `/rider/health`, `/route/health`, and `/payment/health`. The APIs can also be accessed directly on localhost ports 3002-3005 through the mapped NodePorts.
+
+For an end-to-end demo, open the UI in two tabs: choose **Rider** in one tab and go online, then choose **Passenger** in the other and request a ride. The rider tab polls for offers and opens a popup; accept, start, and complete the trip there. The passenger ride list updates with matching status, distance/ETA, and fare.
 
 PostgreSQL and RabbitMQ are single-replica StatefulSets with 1Gi persistent volumes. The volumes are for local practice, not backups or high availability.

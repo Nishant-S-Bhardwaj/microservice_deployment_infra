@@ -61,6 +61,10 @@ spec:
                 secretKeyRef:
                   name: {{ $.Values.jwtSecret }}
                   key: JWT_SECRET
+            {{ if or (eq .name "user") (eq .name "rider") }}
+            - name: DEMO_AUTH_DISABLED
+              value: {{ $.Values.demoAuthDisabled | quote }}
+            {{ end }}
           readinessProbe:
             httpGet:
               path: /health

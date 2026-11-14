@@ -1,6 +1,6 @@
 image:
   repository: nishantbhardwaj/microservices-deployment
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   pullSecrets: []
 
 services:
@@ -32,3 +32,8 @@ rabbitmq:
   authSecret: uber-rabbitmq-auth
 
 jwtSecret: uber-app-auth
+demoAuthDisabled: true
+
+ui:
+  tag: ui
+  port: 80
